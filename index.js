@@ -1,7 +1,4 @@
 var github = (function() {
-    var escapeHtml = function(string) {
-        return $('<div/>').text(string).html();
-    };
     var escapeHtml = function(unsafe) {
         return unsafe.replace(
             /[\u0000-\u002F\u003A-\u0040\u005B-\u0060\u007B-\u00FF]/g,
@@ -11,7 +8,7 @@ var github = (function() {
 
     var render = function(target, repos) {
         var fragment = '';
-        var t = $(target)[0];
+        var t = document.getElementById(target);
 
         for (const repo of repos) {
             var url = repo.html_url;
@@ -26,34 +23,29 @@ var github = (function() {
 
     return {
         showRepos: function(options) {
-            $.ajax({
-                url: "https://api.github.com/users/" + options.user + "/repos?sort=pushed&callback=?",
-                dataType: 'jsonp',
-                error: function (err) {
-                    $(options.target + ' li.loading').addClass('error').text("Error loading feed");
-                },
-                success: function(data) {
+            fetch("https://api.github.com/users/" + options.user + "/repos?sort=pushed")
+                .then(response => response.json())
+                .then(function(response) {
                     var repos = [];
 
-                    if (! data || ! data.data) {
+                    if (! response) {
                         return;
                     }
 
-                    for (var i = 0; i < data.data.length; i++) {
-                        if (options.skip_forks && data.data[i].fork) {
+                    for (var i = 0; i < response.length; i++) {
+                        if (options.skip_forks && response[i].fork) {
                             continue;
                         }
 
-                        repos.push(data.data[i]);
+                        repos.push(response[i]);
                     }
 
                     if (options.count) {
                         repos.splice(options.count);
                     }
 
-                    render(options.target, repos);
-                },
-            });
+                    render(options.id, repos);
+                });
         }
     };
 })();
